@@ -61,6 +61,8 @@ void setup()
   robot.init(serialWriteChannel);
 
   // Serial communication
+  // ( in the case of the teensy, does not matter, the PC sets the serial
+  //   settings for Serial! )
   Serial.begin(115200);
   serial_channels.init(processSerialPacket, serialWrite);
 
@@ -103,7 +105,7 @@ void loop()
       robot.update(delta);
       robot.send();
 
-      // Debug (Serial Monitor)
+      // Debug (Serial Monitor) >>> uncomment this line to see in Serial Monitor
       serialWrite('\n');
 
       // Blink LED
