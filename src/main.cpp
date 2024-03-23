@@ -161,6 +161,10 @@ void processSerialPacket(char channel, uint32_t value, channels_t& obj)
     robot.setMotorWref(mot_i, ((int32_t) value) * kEncImp2MotW );
 #endif
 #ifdef CONFIG_ROS
+    if (mot_i >= kNumMot)
+    {
+      return;
+    }
     robot.setMotorWref(mot_i, *((float*) &value) );
 #endif
     break;
@@ -168,6 +172,10 @@ void processSerialPacket(char channel, uint32_t value, channels_t& obj)
   // - PWM
   case 'K':
     mot_i = (value >> 24) & 0x03;
+    if (mot_i >= kNumMot)
+    {
+      return;
+    }
     pwm = value & 0xFFFF;
     robot.setMotorPWM(mot_i, pwm);
     break;

@@ -14,9 +14,9 @@ class Robot
 {
  public:
   uint32_t dt;
-  Encoder enc[4];
-  Motor mot[4];
-  CtrlPID pid[4];
+  Encoder enc[kNumMot];
+  Motor mot[kNumMot];
+  CtrlPID pid[kNumMot];
 
   void (*serialWriteChannel)(char channel, int32_t value);
 

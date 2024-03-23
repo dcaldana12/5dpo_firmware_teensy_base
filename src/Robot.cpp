@@ -15,7 +15,7 @@ void Robot::init(void (*serialWriteChannelFunction)(char c, int32_t v))
   initEnc();
   updateEncodersState();
 
-  for (i = 0; i < 4; i++)
+  for (i = 0; i < kNumMot; i++)
   {
     encoders[i].delta = 0;
   }
@@ -26,13 +26,13 @@ void Robot::init(void (*serialWriteChannelFunction)(char c, int32_t v))
   // Motors
   Timer3.initialize(20);
 
-  for (i = 0; i < 4; i++)
+  for (i = 0; i < kNumMot; i++)
   {
     mot[i].init(kMotDirPin[i], kMotPwmPin[i]);
   }
 
   // Controllers
-  for (i = 0; i < 4; i++)
+  for (i = 0; i < kNumMot; i++)
   {
     initCtrlPID(i);
   }
@@ -48,19 +48,19 @@ void Robot::update(uint32_t &delta)
   dt = delta;
 
   // Encoders
-  for (i = 0; i < 4; i++)
+  for (i = 0; i < kNumMot; i++)
   {
     enc[i].updateTick();
   }
 
   // Controllers
-  for (i = 0; i < 4; i++)
+  for (i = 0; i < kNumMot; i++)
   {
     pid[i].update(enc[i].odo * kEncImp2MotW);
   }
 
   // Actuators
-  for (i = 0; i < 4; i++)
+  for (i = 0; i < kNumMot; i++)
   {
     if (pid[i].active)
     {
@@ -75,10 +75,10 @@ void Robot::update(uint32_t &delta)
 
 void Robot::send(void)
 {
-  (*serialWriteChannel)('g', enc[0].tick);
-  (*serialWriteChannel)('h', enc[1].tick);
-  (*serialWriteChannel)('i', enc[2].tick);
-  (*serialWriteChannel)('j', enc[3].tick);
+  for (int idx = 0; idx < kNumMot; idx++)
+  {
+    (*serialWriteChannel)('g'+idx, enc[idx].tick);
+  }
 
   (*serialWriteChannel)('k', dt);
 }
@@ -91,7 +91,7 @@ void Robot::stop(void)
 {
   uint8_t i;
 
-  for (i = 0; i < 4; i++)
+  for (i = 0; i < kNumMot; i++)
   {
     setMotorPWM(i, 0);
   }
@@ -123,14 +123,11 @@ void Robot::setMotorPWM(uint8_t index, int16_t pwm)
 
 void Robot::initEnc()
 {
-  pinMode(kMotEncPin0A, INPUT_PULLUP);
-  pinMode(kMotEncPin0B, INPUT_PULLUP);
-  pinMode(kMotEncPin1A, INPUT_PULLUP);
-  pinMode(kMotEncPin1B, INPUT_PULLUP);
-  pinMode(kMotEncPin2A, INPUT_PULLUP);
-  pinMode(kMotEncPin2B, INPUT_PULLUP);
-  pinMode(kMotEncPin3A, INPUT_PULLUP);
-  pinMode(kMotEncPin3B, INPUT_PULLUP);
+  for (int idx = 0; idx < kNumMot; idx++)
+  {
+    pinMode(kMotEncPin[idx][0], INPUT_PULLUP);
+    pinMode(kMotEncPin[idx][1], INPUT_PULLUP);
+  }
 }
 
 
