@@ -1,9 +1,12 @@
-# 5dpo_dragster_teensy
+# [5dpo_firmware_teensy_base](https://github.com/5dpo/5dpo_firmware_teensy_base)
 
 This repository is a generic implementation of the firmware for a mobile robot
 with up-to four wheels using the
 [Teensy 4.1](https://www.pjrc.com/store/teensy41.html) development board as the
 microcontroller to drive the motors.
+
+See the header configuration file [robotconfig.h](/include/robotconfig.h)
+to set up properly your robot!
 
 **Version 0.0.0** _(NOT TESTED)_
 
@@ -75,8 +78,8 @@ microcontroller to drive the motors.
 1. Clone the repository
    ```sh
    # Clone repository
-   git clone git@github.com:5dpo/5dpo_dragster_teensy.git
-   cd 5dpo_dragster_teensy
+   git clone git@github.com:5dpo/5dpo_firmware_teensy_base.git
+   cd 5dpo_firmware_teensy_base
 
    # Open the folder as a project
    code .
