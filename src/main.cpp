@@ -38,8 +38,8 @@ void serialWrite(uint8_t b);
 void serialWriteChannel(char channel, int32_t value);
 void serialRead();
 void checkMotorsTimeout();
-void readPicoCam(char *buffer,  int &angle, int &dist2line);
-void parsePicoInfo(char *buffer, int &angle, int &dist2line);
+void readPicoCam();
+void parseData();
 
 
 
@@ -80,8 +80,12 @@ void setup()
   last_motor_update_millis = millis();
 }
 
-int angle, dist2line;
-char buffer[11];
+float angle, dist2line;
+
+const byte numChars = 32;
+char receivedChars[numChars];
+char tempChars[numChars];
+boolean newData = false;
 
 void loop()
 {
@@ -94,12 +98,19 @@ void loop()
   current_micros = micros();
   delta = current_micros - previous_micros;
 
-  readPicoCam(buffer, angle, dist2line);
-  Serial.print("angle: ");
-  Serial.print(angle);
-  Serial.print(" dist: ");
-  Serial.print(dist2line);
-  Serial.println();
+  readPicoCam();
+  if (newData == true) {
+        strcpy(tempChars, receivedChars);
+            // this temporary copy is necessary to protect the original data
+            //   because strtok() used in parseData() replaces the commas with \0
+        parseData();
+        newData = false;
+
+        Serial.print("angle: ");
+        Serial.print(angle);
+        Serial.print(" dist: ");
+        Serial.println(dist2line);
+    }
 
     //Serial.println();
     // parsePicoInfo(buffer, angle, dist2line);
@@ -263,14 +274,45 @@ void checkMotorsTimeout()
   }
 }
 
-
-
-void readPicoCam(char *buffer, int &angle, int &dist2line)
+void readPicoCam()
 {
-  if(Serial4.available() > 0) {
-    Serial4.readBytes(buffer, 11);
-    parsePicoInfo(buffer, angle, dist2line);
+  static boolean recvInProgress = false;
+  static byte ndx = 0;
+  char startMarker = '#';
+  char endMarker = ';';
+  char rc;
+
+  while (Serial4.available() > 0 && newData == false) {
+      rc = Serial4.read();
+
+      if (recvInProgress == true) {
+          if (rc != endMarker) {
+              receivedChars[ndx] = rc;
+              ndx++;
+              if (ndx >= numChars) {
+                  ndx = numChars - 1;
+              }
+          }
+          else {
+              receivedChars[ndx] = '\0'; // terminate the string
+              recvInProgress = false;
+              ndx = 0;
+              newData = true;
+          }
+      }
+
+      else if (rc == startMarker) {
+          recvInProgress = true;
+      }
   }
+
+  /* if(Serial4.available() > 0) {
+    int len = Serial4.readBytes(buffer, 11);
+    Serial.println();
+    Serial.print(len);
+    Serial.println();
+    parsePicoInfo(buffer, angle, dist2line);
+  } */
 
   // int bytes_rcv = Serial4.available();
   // //char buffer[11];
@@ -296,14 +338,16 @@ void readPicoCam(char *buffer, int &angle, int &dist2line)
   // }
 }
 
+void parseData() {
+  char * strtokIndx; // this is used by strtok() as an index
 
-void parsePicoInfo(char *buffer, int &angle, int &dist2line)
-{
-  //#XXX YYY;\n
-  //ler valores entre # e ' ' e converter para int angle 
-  //talvez atoi?
-  //ler valores entre ' ' e ';' e converter para int dist2line
-  //talvez atoi?
-  angle = strtol(buffer + 1, NULL, 10);
-  dist2line = strtol(buffer + 6, NULL, 10);
+  strtokIndx = strtok(tempChars, " ");       // this continues where the previous call left off
+  angle = atoi(strtokIndx);     // convert this part to an integer
+  angle = (angle / 1000.0f) * (180.0f / 3.1415926f); 
+
+  strtokIndx = strtok(NULL, " ");
+  dist2line = atoi(strtokIndx);       // convert this part to a float
+  dist2line = dist2line / 1000.0f;
+
+  newData = false;
 }
