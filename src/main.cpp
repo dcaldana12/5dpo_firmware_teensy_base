@@ -4,8 +4,7 @@
 
 #include "Robot.h"
 
-
-
+#include <string>
 
 
 /******************************************************************************
@@ -21,8 +20,6 @@ bool timeout = false;
 channels_t serial_channels;
 
 uint8_t builtin_led_state;    // NOTE: the pin function is shared with SPI SCK!
-
-
 
 Robot robot;
 
@@ -41,7 +38,8 @@ void serialWrite(uint8_t b);
 void serialWriteChannel(char channel, int32_t value);
 void serialRead();
 void checkMotorsTimeout();
-
+void readPicoCam(char *buffer,  int &angle, int &dist2line);
+void parsePicoInfo(char *buffer, int &angle, int &dist2line);
 
 
 
@@ -58,16 +56,17 @@ void setup()
   digitalWrite(LED_BUILTIN, builtin_led_state);
 
   // Robot
-  robot.init(serialWriteChannel);
+  //robot.init(serialWriteChannel);
 
   // Serial communication
   // ( in the case of the teensy, does not matter, the PC sets the serial
   //   settings for Serial! )
   Serial.begin(115200);
-  serial_channels.init(processSerialPacket, serialWrite);
+  Serial4.begin(115200); // arducam
+  //serial_channels.init(processSerialPacket, serialWrite);
 
   // Reset signal
-  serialWriteChannel('r', 0);
+  //serialWriteChannel('r', 0);
 
   // Test PWM motors
   /*robot.setMotorPWM(0, 0);
@@ -81,51 +80,75 @@ void setup()
   last_motor_update_millis = millis();
 }
 
+int angle, dist2line;
+char buffer[11];
+
 void loop()
 {
   static unsigned long blink_led_decimate = 0;
-  uint32_t delta;
+  int delta;
+  
 
-  serialRead();
+  //serialRead();
 
   current_micros = micros();
   delta = current_micros - previous_micros;
-  if (delta > kMotCtrlTimeUs)
-  {
-    if (kMotCtrlTimeoutEnable)
-    {
-      checkMotorsTimeout();
-    }
 
-    if (!timeout)
-    {
-      previous_micros = current_micros;
+  readPicoCam(buffer, angle, dist2line);
+  Serial.print("angle: ");
+  Serial.print(angle);
+  Serial.print(" dist: ");
+  Serial.print(dist2line);
+  Serial.println();
 
-      // Update and send data
-      robot.update(delta);
-      robot.send();
+    //Serial.println();
+    // parsePicoInfo(buffer, angle, dist2line);
+    // Serial.print("Current micros: ");
+    // Serial.print(delta);
+    // Serial.print("angle: ");
+    // Serial.print(angle);
+    // Serial.print("dist: ");
+    // Serial.print(dist2line);
+    // Serial.println();
+  
+  //readPicoCam();
 
-      // Debug (Serial Monitor) >>> uncomment this line to see in Serial Monitor
-      serialWrite('\n');
+  // if (delta > kMotCtrlTimeUs)
+  // {
+  //   if (kMotCtrlTimeoutEnable)
+  //   {
+  //     checkMotorsTimeout();
+  //   }
 
-      // Blink LED
-      blink_led_decimate++;
-      if (blink_led_decimate >= kMotCtrlLEDOkCount)
-      {
-        if (builtin_led_state == LOW)
-        {
-          builtin_led_state = HIGH;
-        }
-        else
-        {
-          builtin_led_state = LOW;
-        }
+  //   if (!timeout)
+  //   {
+  //     previous_micros = current_micros;
 
-        digitalWrite(LED_BUILTIN, builtin_led_state);
-        blink_led_decimate = 0;
-      }
-    }
-  }
+  //     // Update and send data
+  //     robot.update(delta);
+  //     robot.send();
+
+  //     // Debug (Serial Monitor) >>> uncomment this line to see in Serial Monitor
+  //     serialWrite('\n');
+
+  //     // Blink LED
+  //     blink_led_decimate++;
+  //     if (blink_led_decimate >= kMotCtrlLEDOkCount)
+  //     {
+  //       if (builtin_led_state == LOW)
+  //       {
+  //         builtin_led_state = HIGH;
+  //       }
+  //       else
+  //       {
+  //         builtin_led_state = LOW;
+  //       }
+
+  //       digitalWrite(LED_BUILTIN, builtin_led_state);
+  //       blink_led_decimate = 0;
+  //     }
+  //   }
+  // }
 }
 
 
@@ -215,6 +238,8 @@ void serialRead()
   }
 }
 
+
+
 void checkMotorsTimeout()
 {
   if (millis() - last_motor_update_millis > kMotCtrlTimeout)
@@ -236,4 +261,49 @@ void checkMotorsTimeout()
 
     timeout = 0;
   }
+}
+
+
+
+void readPicoCam(char *buffer, int &angle, int &dist2line)
+{
+  if(Serial4.available() > 0) {
+    Serial4.readBytes(buffer, 11);
+    parsePicoInfo(buffer, angle, dist2line);
+  }
+
+  // int bytes_rcv = Serial4.available();
+  // //char buffer[11];
+  // if (bytes_rcv > 0)
+  // {
+  //   // read the incoming byte:
+  //   //char incomingByte = Serial4.read();
+  //   Serial4.readBytes(buffer, bytes_rcv);
+
+  //   // say what you got:
+  //   // Serial.print("I received: ");
+    
+  //   // for(int i = 0; i < 11; i++){
+  //   //   Serial.print(buffer[i]);
+  //   // }
+  //   // Serial.println();
+  // }
+
+  // if(Serial4.available() > 0){
+  //   buffer = Serial4.readStringUntil(';');
+  //   Serial.print("I received: ");
+  //   Serial.println(buffer);
+  // }
+}
+
+
+void parsePicoInfo(char *buffer, int &angle, int &dist2line)
+{
+  //#XXX YYY;\n
+  //ler valores entre # e ' ' e converter para int angle 
+  //talvez atoi?
+  //ler valores entre ' ' e ';' e converter para int dist2line
+  //talvez atoi?
+  angle = strtol(buffer + 1, NULL, 10);
+  dist2line = strtol(buffer + 6, NULL, 10);
 }
