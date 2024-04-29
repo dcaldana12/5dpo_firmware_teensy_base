@@ -56,17 +56,17 @@ void setup()
   digitalWrite(LED_BUILTIN, builtin_led_state);
 
   // Robot
-  //robot.init(serialWriteChannel);
+  robot.init(serialWriteChannel);
 
   // Serial communication
   // ( in the case of the teensy, does not matter, the PC sets the serial
   //   settings for Serial! )
   Serial.begin(115200);
   Serial4.begin(115200); // arducam
-  //serial_channels.init(processSerialPacket, serialWrite);
+  serial_channels.init(processSerialPacket, serialWrite);
 
   // Reset signal
-  //serialWriteChannel('r', 0);
+  serialWriteChannel('r', 0);
 
   // Test PWM motors
   /*robot.setMotorPWM(0, 0);
@@ -87,79 +87,82 @@ char receivedChars[numChars];
 char tempChars[numChars];
 boolean newData = false;
 
+//int ten=0, twenty=0;
+
 void loop()
 {
   static unsigned long blink_led_decimate = 0;
-  int delta;
-  
+  unsigned long delta;
 
-  //serialRead();
+  serialRead();
 
   current_micros = micros();
   delta = current_micros - previous_micros;
 
   readPicoCam();
   if (newData == true) {
-        strcpy(tempChars, receivedChars);
-            // this temporary copy is necessary to protect the original data
-            //   because strtok() used in parseData() replaces the commas with \0
-        parseData();
-        newData = false;
+      strcpy(tempChars, receivedChars);
+          // this temporary copy is necessary to protect the original data
+          // because strtok() used in parseData() replaces the commas with \0
+      parseData();
+      newData = false;
 
-        Serial.print("angle: ");
-        Serial.print(angle);
-        Serial.print(" dist: ");
-        Serial.println(dist2line);
+      /* Serial.print("angle: ");
+      Serial.print(angle);
+      Serial.print(" dist: ");
+      Serial.print(dist2line);
+      Serial.print(" deltaT: ");
+      Serial.print(delta);
+      previous_micros = current_micros;
+
+      if (delta < 12000)
+        ten++;
+      else if(delta < 30000)
+        twenty++;
+      Serial.print(" 20ms: ");
+      Serial.print(twenty);  
+      Serial.print(" 10ms: ");
+      Serial.println(ten);   */
+  }
+
+  if (delta > kMotCtrlTimeUs)
+  {
+    if (kMotCtrlTimeoutEnable)
+    {
+      checkMotorsTimeout();
     }
 
-    //Serial.println();
-    // parsePicoInfo(buffer, angle, dist2line);
-    // Serial.print("Current micros: ");
-    // Serial.print(delta);
-    // Serial.print("angle: ");
-    // Serial.print(angle);
-    // Serial.print("dist: ");
-    // Serial.print(dist2line);
-    // Serial.println();
-  
-  //readPicoCam();
+    if (!timeout)
+    {
+      previous_micros = current_micros;
 
-  // if (delta > kMotCtrlTimeUs)
-  // {
-  //   if (kMotCtrlTimeoutEnable)
-  //   {
-  //     checkMotorsTimeout();
-  //   }
+      // Update and send data
+      robot.update(delta);
+      robot.send();
 
-  //   if (!timeout)
-  //   {
-  //     previous_micros = current_micros;
+      //Debug (Serial Monitor) >>> uncomment this line to see in Serial Monitor
+      Serial.print(" Encoder tick: ");
+      Serial.println(robot.enc[0].tick);
+      //serialWrite('\n');
 
-  //     // Update and send data
-  //     robot.update(delta);
-  //     robot.send();
+      // Blink LED
+      blink_led_decimate++;
+      if (blink_led_decimate >= kMotCtrlLEDOkCount)
+      {
+        if (builtin_led_state == LOW)
+        {
+          builtin_led_state = HIGH;
+        }
+        else
+        {
+          builtin_led_state = LOW;
+        }
 
-  //     // Debug (Serial Monitor) >>> uncomment this line to see in Serial Monitor
-  //     serialWrite('\n');
-
-  //     // Blink LED
-  //     blink_led_decimate++;
-  //     if (blink_led_decimate >= kMotCtrlLEDOkCount)
-  //     {
-  //       if (builtin_led_state == LOW)
-  //       {
-  //         builtin_led_state = HIGH;
-  //       }
-  //       else
-  //       {
-  //         builtin_led_state = LOW;
-  //       }
-
-  //       digitalWrite(LED_BUILTIN, builtin_led_state);
-  //       blink_led_decimate = 0;
-  //     }
-  //   }
-  // }
+        digitalWrite(LED_BUILTIN, builtin_led_state);
+        blink_led_decimate = 0;
+      }
+    }
+  }
 }
 
 
@@ -292,61 +295,27 @@ void readPicoCam()
               if (ndx >= numChars) {
                   ndx = numChars - 1;
               }
-          }
-          else {
+          } else {
               receivedChars[ndx] = '\0'; // terminate the string
               recvInProgress = false;
               ndx = 0;
               newData = true;
           }
-      }
-
-      else if (rc == startMarker) {
+      } else if (rc == startMarker) {
           recvInProgress = true;
       }
   }
-
-  /* if(Serial4.available() > 0) {
-    int len = Serial4.readBytes(buffer, 11);
-    Serial.println();
-    Serial.print(len);
-    Serial.println();
-    parsePicoInfo(buffer, angle, dist2line);
-  } */
-
-  // int bytes_rcv = Serial4.available();
-  // //char buffer[11];
-  // if (bytes_rcv > 0)
-  // {
-  //   // read the incoming byte:
-  //   //char incomingByte = Serial4.read();
-  //   Serial4.readBytes(buffer, bytes_rcv);
-
-  //   // say what you got:
-  //   // Serial.print("I received: ");
-    
-  //   // for(int i = 0; i < 11; i++){
-  //   //   Serial.print(buffer[i]);
-  //   // }
-  //   // Serial.println();
-  // }
-
-  // if(Serial4.available() > 0){
-  //   buffer = Serial4.readStringUntil(';');
-  //   Serial.print("I received: ");
-  //   Serial.println(buffer);
-  // }
 }
 
 void parseData() {
   char * strtokIndx; // this is used by strtok() as an index
 
-  strtokIndx = strtok(tempChars, " ");       // this continues where the previous call left off
-  angle = atoi(strtokIndx);     // convert this part to an integer
-  angle = (angle / 1000.0f) * (180.0f / 3.1415926f); 
+  strtokIndx = strtok(tempChars, " ");       
+  angle = atoi(strtokIndx);           // convert this part to an integer
+  angle = (angle / 1000.0f) * (180.0f / 3.1415926f); //divide by 1000 and convert to deg.
 
-  strtokIndx = strtok(NULL, " ");
-  dist2line = atoi(strtokIndx);       // convert this part to a float
+  strtokIndx = strtok(NULL, " ");     // this continues where the previous call left off
+  dist2line = atoi(strtokIndx);       // convert this part to an integer
   dist2line = dist2line / 1000.0f;
 
   newData = false;
