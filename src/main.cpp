@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Adafruit_BNO08x.h>
 
 #include <channels.h>
 
@@ -6,6 +7,7 @@
 
 #include <string>
 
+#define BNO0X_RESET -1
 
 /******************************************************************************
  * GLOBAL VARIABLES
@@ -23,10 +25,17 @@ uint8_t builtin_led_state;    // NOTE: the pin function is shared with SPI SCK!
 
 Robot robot;
 
+Adafruit_BNO08x bno(BNO0X_RESET);
+sh2_SensorValue_t sensorValue;
+
 Encoder *encoders = robot.enc;
 
+float angle, dist2line;
 
-
+const byte numChars = 32;
+char receivedChars[numChars];
+char tempChars[numChars];
+boolean newData = false;
 
 
 /******************************************************************************
@@ -40,6 +49,8 @@ void serialRead();
 void checkMotorsTimeout();
 void readPicoCam();
 void parseData();
+void setReports(void);
+void getImuData(void);
 
 
 
@@ -68,6 +79,17 @@ void setup()
   // Reset signal
   serialWriteChannel('r', 0);
 
+  // I2C
+  Wire.begin();
+
+  // Imu
+  if(!bno.begin_I2C())
+  {
+    Serial.println("Failed to find BNO08x chip");
+    while (1) { delay(10); }
+  }
+  Serial.println("BNO08x Found!");
+
   // Test PWM motors
   /*robot.setMotorPWM(0, 0);
   robot.setMotorPWM(1, 0);
@@ -78,14 +100,9 @@ void setup()
   current_micros = micros();
   previous_micros = current_micros;
   last_motor_update_millis = millis();
+
+  setReports();
 }
-
-float angle, dist2line;
-
-const byte numChars = 32;
-char receivedChars[numChars];
-char tempChars[numChars];
-boolean newData = false;
 
 //int ten=0, twenty=0;
 
@@ -93,6 +110,11 @@ void loop()
 {
   static unsigned long blink_led_decimate = 0;
   unsigned long delta;
+
+  if (bno.wasReset()) {
+    Serial.print("sensor was reset ");
+    setReports();
+  }
 
   serialRead();
 
@@ -124,6 +146,8 @@ void loop()
       Serial.print(" 10ms: ");
       Serial.println(ten);   */
   }
+
+  getImuData();
 
   if (delta > kMotCtrlTimeUs)
   {
@@ -319,4 +343,38 @@ void parseData() {
   dist2line = dist2line / 1000.0f;
 
   newData = false;
+}
+
+
+// Here is where you define the sensor outputs you want to receive: Report type and report rate
+void setReports(void)
+{
+  Serial.print("Setting desired reports");
+  if(!bno.enableReport(SH2_ACCELEROMETER, 10000UL)) {
+    Serial.print("Could not enable accelerometer");
+  }
+}
+
+
+
+void getImuData(void) 
+{
+  if(bno.getSensorEvent(&sensorValue)) {
+    switch (sensorValue.sensorId)
+    {
+    case SH2_ACCELEROMETER:
+      Serial.print("Accelerometer X:");
+      Serial.print(sensorValue.un.accelerometer.x);
+      Serial.print(" Y:");
+      Serial.print(sensorValue.un.accelerometer.y);
+      Serial.print(" Z:");
+      Serial.println(sensorValue.un.accelerometer.z);
+      break;
+    
+    default:
+      Serial.print("Unknown sensor ID: ");
+      Serial.println(sensorValue.sensorId);
+      break;
+    }
+  }
 }
