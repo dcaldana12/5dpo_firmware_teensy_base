@@ -65,7 +65,7 @@ constexpr float kRobotBattVnom = 11.1f;   //!< nominal battery level (V)
  ******************************************************************************/
 
 constexpr float kMotNgear  = 43.8;    //!< gear reduction ratio (n:1)
-constexpr float kMotEncRes = 16*4;    //!< encoder resolution (tick count per rev.)
+constexpr float kMotEncRes = 600*4;   //!< encoder resolution (tick count per rev.)
 
 constexpr uint8_t kMotEncPin[kNumMot][2] =
 {
