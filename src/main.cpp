@@ -160,6 +160,9 @@ void loop()
     {
       previous_micros = current_micros;
 
+      //calculate V and W to send to Robot (P or PI controller based on data from ArduCam)
+      //robot.setRobotVW(Vnom, Wnom);
+
       // Update and send data
       robot.update(delta);
       robot.send();
