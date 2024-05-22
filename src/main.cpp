@@ -21,7 +21,7 @@ unsigned long previous_micros = 0;
 unsigned long last_motor_update_millis = 0;
 double Wmax = 300; //200
 double Wmin = 50;  //90 //100
-double r = 0.05/2;
+double r = kRobotWhD[0]/2;
 double b = 0.095;
 double Vlin = Wmin*r;
 double VlinMax = Wmax*r;
@@ -126,12 +126,16 @@ void loop()
       parseSerialPico();
     
       if(analogRead(LDRPIN)>LDRThreshold){
-        race_mode=true;
+        //ES TEST (remove comment for LDR activation) race_mode=true;
         //reset odometry
         robot.x = 0;
         robot.y = 0;
         robot.theta = 0;
       }
+
+      //ES TEST set left motor speed to 100rad/s approx 955rpm (5dpo max speed 300rad/s)
+      //PI individual motor speed control
+      robot.setMotorWref(1, 100);
       
       if(race_mode){
         double error_theta = robot.angle2line;
@@ -158,8 +162,8 @@ void loop()
         double v1 = Vlin - w*b;
         double v2 = Vlin + w*b;
 
-        double wref1 = v1/r;
-        double wref2 = v2/r;
+        double wref1 = v1/kRobotWhD[0]/2;
+        double wref2 = v2/kRobotWhD[1]/2;
 
         last_errorTheta = error_theta;
         last_errorDist = error_line;
