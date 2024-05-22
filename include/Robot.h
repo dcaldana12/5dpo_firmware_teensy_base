@@ -19,7 +19,6 @@ class Robot
   CtrlPID pid[kNumMot];
   double dist2line, angle2line;
   int bad_count;
-  double wheelbase = 0.095;
   double x = 0;
   double y = 0;
   double theta = 0;
