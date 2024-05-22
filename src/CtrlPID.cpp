@@ -70,7 +70,8 @@ void CtrlPID::reset(void)
 
 void CtrlPID::enable(bool e)
 {
-  if (active != e) {
+  if (active != e)
+  {
     active = e;
     reset();
   }

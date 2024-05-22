@@ -11,6 +11,12 @@ void Robot::init(void (*serialWriteChannelFunction)(char c, int32_t v))
   // Serial write channels function
   serialWriteChannel = serialWriteChannelFunction;
 
+  // General inputs / outputs
+  // - solenoid
+  pinMode(kRobotSensSwitchPin, INPUT_PULLUP);
+  pinMode(kRobotActSolenoidPin, OUTPUT);
+  digitalWrite(kRobotActSolenoidPin, 0);
+
   // Encoders
   initEnc();
   updateEncodersState();
@@ -21,7 +27,7 @@ void Robot::init(void (*serialWriteChannelFunction)(char c, int32_t v))
   }
 
   Timer1.attachInterrupt(updateEncodersState);
-  Timer1.initialize(20);  // calls every X us
+  Timer1.initialize(5);  // calls every X us
 
   // Motors
   Timer3.initialize(20);
@@ -53,17 +59,14 @@ void Robot::update(uint32_t &delta)
     enc[i].updateTick();
   }
 
-  // Robot speed controller and odometry
-  accelerationLimit();
-  VWToMotorSpeed();
-  odometry();
+  updateState(enc[0].odo, enc[1].odo);
 
-  // Motor speed Controllers
+  // Controllers
   for (i = 0; i < kNumMot; i++)
-  { 
+  {
     pid[i].update(enc[i].odo * kEncImp2MotW);
   }
-
+  tomaW=enc[0].odo;
   // Actuators
   for (i = 0; i < kNumMot; i++)
   {
@@ -86,6 +89,9 @@ void Robot::send(void)
   }
 
   (*serialWriteChannel)('k', dt);
+
+  (*serialWriteChannel)('s', (digitalRead(kRobotSensSwitchPin) << 0));
+  (*serialWriteChannel)('z', pid[0].w);
 }
 
 
@@ -102,67 +108,8 @@ void Robot::stop(void)
   }
 }
 
-// updates reference robot speeds (call in main.cpp)
-void Robot::setRobotVW(float Vnom, float Wnom)
-{
-  v_req = Vnom;
-  w_req = Wnom;
-}
-
-// limits variation of reference robot speeds
-void Robot::accelerationLimit(void)
-{
-  float dv = v_req - v;
-  dv = constrain(dv, -dv_max, dv_max);
-  v += dv;
-
-  float dw = w_req - w;
-  dw = constrain(dw, -dw_max, dw_max);
-  w += dw;
-}
-
-// updates reference speed for motors based on robot velocity (v) and angular velocity (w) inputs
-void Robot::VWToMotorSpeed(void)
-{
-  //tangential wheel velocity (m/s)
-  float v1ref = v + w * kRobotL[0] / 2;
-  float v2ref = v - w * kRobotL[0] / 2; 
-  
-  //wheel speed (rad/s)
-  float w1ref = v1ref / ( kRobotWhD[0]/2 );       //right wheel
-  float w2ref = v2ref / ( kRobotWhD[1]/2 );       //left wheel
-
-  setMotorWref(0, w1ref);
-  setMotorWref(1, w2ref);
-}
 
 
-void Robot::odometry(void)
-{
-  // Estimate wheels speed using the encoders
-  w1e = enc[0].odo * kEncImp2MotW;
-  w2e = enc[1].odo * kEncImp2MotW;
-
-  v1e = w1e * ( kRobotWhD[0]/2 );
-  v2e = w2e * ( kRobotWhD[1]/2 );     
-
-  // Estimate robot speed
-  ve = (v1e + v2e) / 2.0;
-  we = (v1e - v2e) / kRobotL[0];
-  
-  // Estimate the distance and the turn angle
-  ds = ve * dt;
-  dtheta = we * dt;
-
-  // Estimate pose
-  xe += ds * cos(thetae + dtheta/2);
-  ye += ds * sin(thetae + dtheta/2);
-  thetae = thetae + dtheta;
-
-  // Relative displacement
-  rel_s += ds;
-  rel_theta += dtheta;
-}
 
 
 void Robot::setMotorWref(uint8_t index, float new_w_r)
@@ -222,4 +169,20 @@ void Robot::initCtrlPID(uint8_t index)
   pid[index].hamm_v0 = 0;
 
   pid[index].reset();
+}
+
+void Robot::updateState(uint32_t ticks_left, uint32_t ticks_right)
+{
+
+  double d1 = double(ticks_left)/kMotEncRes*2*M_PI*0.05/2;
+  double d2 = double(ticks_right)/kMotEncRes*2*M_PI*0.05/2;
+  double delta_d = (d2+d1)/2;
+  double delta_theta = (d2-d1)/(2*wheelbase);
+  x = x + delta_d*cos(theta + delta_theta/2);
+  y = y + delta_d*sin(theta + delta_theta/2);
+  theta = theta + delta_theta;
+
+  Serial.print("Distance: ");
+  Serial.print(x);
+  Serial.print("\n");
 }

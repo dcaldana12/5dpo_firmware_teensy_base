@@ -42,17 +42,29 @@ constexpr uint8_t kNumMot = 2;
 //!< robot geometric distances (e.g., wheelbase = dist right and left wh)
 constexpr float kRobotL[] =
 {
-  0.1000    //!< distance between left and right wheels
+  0.1900    //!< distance between left and right wheels
 };
 
 //!< diameter of the wheels 0-3 (m)
 constexpr float kRobotWhD[kNumMot] =
 {
-  0.0600,   //!< right wheel
-  0.0600    //!< left  wheel
+  0.0500,   //!< right wheel
+  0.0500    //!< left  wheel
 };
 
 constexpr float kRobotBattVnom = 11.1f;   //!< nominal battery level (V)
+
+
+
+
+
+/******************************************************************************
+ * General inputs / outputs
+ * - solenoid
+ * - switch
+ ******************************************************************************/
+constexpr uint8_t kRobotActSolenoidPin = 40;
+constexpr uint8_t kRobotSensSwitchPin  = 39;
 
 
 
@@ -64,8 +76,8 @@ constexpr float kRobotBattVnom = 11.1f;   //!< nominal battery level (V)
  * - controllers parameters
  ******************************************************************************/
 
-constexpr float kMotNgear  = 43.8;    //!< gear reduction ratio (n:1)
-constexpr float kMotEncRes = 600*4;   //!< encoder resolution (tick count per rev.)
+constexpr float kMotNgear  = 1.0;//43.8;    //!< gear reduction ratio (n:1)
+constexpr float kMotEncRes = 4669;    //!< encoder resolution (tick count per rev.)
 
 constexpr uint8_t kMotEncPin[kNumMot][2] =
 {
@@ -76,17 +88,17 @@ constexpr uint8_t kMotEncPin[kNumMot][2] =
 constexpr int kMotDirPin[kNumMot] =
 {
   23,   //!< right wheel
-  22    //!< left  wheel
+  20    //!< left  wheel
 };
 
 constexpr int kMotPwmPin[kNumMot] =
 {
   TIMER3_B_PIN,   //!< right wheel
-  TIMER1_A_PIN    //!< left  wheel
+  TIMER3_A_PIN    //!< left  wheel
 };
 
-constexpr float kMotModelKp  = 4.5000;    //!< gain (rad.s^(-1) / V)
-constexpr float kMotModelTau = 0.1000;    //!< time constant (s)
+constexpr float kMotModelKp  = 64.50;    //!< gain (rad.s^(-1) / V)
+constexpr float kMotModelTau = 0.1;    //!< time constant (s)
 constexpr float kMotModelLag = 0.0000;    //!< lag lag (s)
 
 constexpr unsigned long kMotCtrlFreq = 100UL;       //!< frequency (Hz)
@@ -99,7 +111,7 @@ constexpr unsigned long kMotCtrlLEDOkFreq = 4UL;  //!< heartbeat LED frequency (
 constexpr unsigned long kMotCtrlLEDOkCount =
     1000000UL / kMotCtrlLEDOkFreq / kMotCtrlTimeUs / 2;
 
-constexpr float kMotVmax = 12;          //!< maximum voltage appliable to motors (V)
+constexpr float kMotVmax = 7.f;         //!< maximum voltage appliable to motors (V)
 constexpr int16_t kMotPWMmax = 1023;    //!< maximum PWM (0..1023)
 constexpr int16_t kMotPWMDeltaMax = 100;//!< maximum variation in PWM (0..1023)
 constexpr bool kMotPWMDeltaMaxEnabled = true; //!< enable limits on PWM variation
@@ -120,7 +132,7 @@ constexpr float kMotCtrlKc = kMotCtrlKcKp / kMotModelKp;
 constexpr float kMotCtrlTi = kMotModelTau;
 
 //! Feed-Forward constant
-const float kMotCtrlKf = 0.456294584f;
+const float kMotCtrlKf =  0.8*1/kMotModelKp;//0.0097342799188641f;
 
 
 

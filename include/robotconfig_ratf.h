@@ -62,6 +62,18 @@ constexpr float kRobotBattVnom = 11.1f;   //!< nominal battery level (V)
 
 
 /******************************************************************************
+ * General inputs / outputs
+ * - solenoid
+ * - switch
+ ******************************************************************************/
+constexpr uint8_t kRobotActSolenoidPin = 40;
+constexpr uint8_t kRobotSensSwitchPin  = 39;
+
+
+
+
+
+/******************************************************************************
  * Motor parameters
  * - gear reduction ratio and encoders resolution
  * - controllers parameters
@@ -129,7 +141,7 @@ constexpr float kMotCtrlKc = kMotCtrlKcKp / kMotModelKp;
 constexpr float kMotCtrlTi = kMotModelTau;
 
 //! Feed-Forward constant
-const float kMotCtrlKf = 0.456294584f;
+constexpr float kMotCtrlKf = 0.456294584f;
 
 
 
