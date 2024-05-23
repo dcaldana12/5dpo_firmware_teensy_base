@@ -5,7 +5,7 @@
 #include "Robot.h"
 
 #define LDRPIN A0
-#define LDRThreshold 500
+#define LDRThreshold 800
 
 
 
@@ -124,7 +124,9 @@ void loop()
       robot.update(delta);
       robot.send();
       parseSerialPico();
-    
+
+      //Serial.print(" || ");
+      //Serial.println(analogRead(LDRPIN));
       if(analogRead(LDRPIN)>LDRThreshold){
         race_mode=true;
         //reset odometry
@@ -135,7 +137,12 @@ void loop()
 
       //ES TEST set left motor speed to 100rad/s approx 955rpm (5dpo max speed 300rad/s)
       //PI individual motor speed control
-      robot.setMotorWref(1, 100);
+      if(race_mode){
+        Vlin = acc_ramp(Vlin, 0.035); 
+        double v2 = Vlin;
+        double wref2 = v2/kRobotWhD[1]/2;
+        robot.setMotorWref(1,wref2);
+      }
       
       /* if(race_mode){
         double error_theta = robot.angle2line;
