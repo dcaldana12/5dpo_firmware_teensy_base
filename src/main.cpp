@@ -126,7 +126,7 @@ void loop()
       parseSerialPico();
     
       if(analogRead(LDRPIN)>LDRThreshold){
-        //ES TEST (remove comment for LDR activation) race_mode=true;
+        race_mode=true;
         //reset odometry
         robot.x = 0;
         robot.y = 0;
@@ -137,7 +137,7 @@ void loop()
       //PI individual motor speed control
       robot.setMotorWref(1, 100);
       
-      if(race_mode){
+      /* if(race_mode){
         double error_theta = robot.angle2line;
         double error_line = robot.dist2line;
 
@@ -195,7 +195,7 @@ void loop()
       else{ //stop
         robot.setMotorPWM(1,0);
         robot.setMotorPWM(0,0);
-      }
+      } */
 
       // Blink LED
       blink_led_decimate++;
