@@ -173,7 +173,6 @@ void Robot::initCtrlPID(uint8_t index)
 
 void Robot::updateState(uint32_t ticks_left, uint32_t ticks_right)
 {
-
   double d1 = double(ticks_left)/kMotEncRes*2*M_PI*kRobotWhD[1]/2;
   double d2 = double(ticks_right)/kMotEncRes*2*M_PI*kRobotWhD[0]/2;
   double delta_d = (d2+d1)/2;
@@ -184,11 +183,13 @@ void Robot::updateState(uint32_t ticks_left, uint32_t ticks_right)
 
   Serial.print("Distance: ");
   Serial.print(x);
+  Serial.print("Ticks: ");
+  Serial.print(enc[0].tick);
   Serial.print("|| L speed: ");
-  Serial.print(enc[1].odo * kEncImp2MotW);
+  Serial.print(enc[0].odo * kEncImp2MotW);
   Serial.print("|| L speed ref: ");
-  Serial.print(pid[1].w_ref);
+  Serial.print(pid[0].w_ref);
   Serial.print("|| L motor voltage: ");
-  Serial.print(pid[1].m);
+  Serial.print(pid[0].m);
   Serial.print("\n");
 }

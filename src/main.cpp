@@ -19,7 +19,7 @@ unsigned long current_micros = 0;
 unsigned long first_micros = 0;
 unsigned long previous_micros = 0;
 unsigned long last_motor_update_millis = 0;
-double Wmax = 300; //200
+double Wmax = 200; //200
 double Wmin = 50;  //90 //100
 double r = kRobotWhD[0]/2;
 double b = 0.095;
@@ -124,6 +124,10 @@ void loop()
       robot.update(delta);
       robot.send();
       parseSerialPico();
+      /* Serial.print("angle: ");
+      Serial.print(robot.angle2line); //radians (display is degrees)
+      Serial.print(" || dist: ");
+      Serial.println(robot.dist2line); //not sure what unit (cm?)*/
 
       //Serial.print(" || ");
       //Serial.println(analogRead(LDRPIN));
@@ -137,14 +141,25 @@ void loop()
 
       //ES TEST set left motor speed to 100rad/s approx 955rpm (5dpo max speed 300rad/s)
       //PI individual motor speed control
-      if(race_mode){
+      /* if(race_mode){
+        if(robot.x >= 8.85){ //stop condition and deacceleration ramp
+          Vlin = acc_ramp(Vlin, -0.28); 
+        }
+
         Vlin = acc_ramp(Vlin, 0.035); 
         double v2 = Vlin;
         double wref2 = v2/kRobotWhD[1]/2;
         robot.setMotorWref(1,wref2);
-      }
+
+        double v1 = Vlin;
+        double wref1 = v1/kRobotWhD[0]/2;
+        robot.setMotorWref(0,wref1); 
+
+        //robot.setMotorPWM(0, 200);
+        //robot.setMotorPWM(1, 200);
+      } */
       
-      /* if(race_mode){
+      if(race_mode){
         double error_theta = robot.angle2line;
         double error_line = robot.dist2line;
 
@@ -202,7 +217,7 @@ void loop()
       else{ //stop
         robot.setMotorPWM(1,0);
         robot.setMotorPWM(0,0);
-      } */
+      }
 
       // Blink LED
       blink_led_decimate++;

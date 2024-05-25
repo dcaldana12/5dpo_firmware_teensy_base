@@ -42,14 +42,14 @@ constexpr uint8_t kNumMot = 2;
 //!< robot geometric distances (e.g., wheelbase = dist right and left wh)
 constexpr float kRobotL[] =
 {
-  0.2680    //!< distance between left and right wheels
+  0.2350    //!< distance between left and right wheels
 };
 
 //!< diameter of the wheels 0-3 (m)
 constexpr float kRobotWhD[kNumMot] =
 {
-  0.0350,   //!< right wheel
-  0.0350    //!< left  wheel
+  0.040,   //!< right wheel
+  0.040    //!< left  wheel
 };
 
 constexpr float kRobotBattVnom = 7.4f;   //!< nominal battery level (V)
@@ -76,7 +76,8 @@ constexpr uint8_t kRobotSensSwitchPin  = 39;
  * - controllers parameters
  ******************************************************************************/
 
-constexpr float kMotNgear  = 17.f/110.f; //43.8;    //!< gear reduction ratio (n:1)
+constexpr float kMotNgear  = 17.f/110.f; //43.8;    //!< gear reduction ratio (n:1) (motor2encoder speed)
+constexpr float kWheelNgear = 17.f/36.f;            //!< gear reduction ratio (motor2wheel speed)
 constexpr float kMotEncRes = 2400;    //!< encoder resolution (tick count per rev.)
 
 constexpr uint8_t kMotEncPin[kNumMot][2] =
