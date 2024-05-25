@@ -19,12 +19,10 @@ unsigned long current_micros = 0;
 unsigned long first_micros = 0;
 unsigned long previous_micros = 0;
 unsigned long last_motor_update_millis = 0;
-double Wmax = 200; //200
-double Wmin = 50;  //90 //100
-double r = kRobotWhD[0]/2;
-double b = 0.095;
-double Vlin = Wmin*r;
-double VlinMax = Wmax*r;
+//double Wmax = 200; //200
+//double Wmin = 50;  //90 //100
+double Vlin = 0.4722; //50 * r * 17/32 (m/s)  //Wmin*r
+double VlinMax = 1; //Wmax*r
 double Wlimit = 350;//230
 int cont = 0;
 double last_errorTheta = 0, last_errorDist = 0;
@@ -124,13 +122,7 @@ void loop()
       robot.update(delta);
       robot.send();
       parseSerialPico();
-      /* Serial.print("angle: ");
-      Serial.print(robot.angle2line); //radians (display is degrees)
-      Serial.print(" || dist: ");
-      Serial.println(robot.dist2line); //not sure what unit (cm?)*/
 
-      //Serial.print(" || ");
-      //Serial.println(analogRead(LDRPIN));
       if(analogRead(LDRPIN)>LDRThreshold){
         race_mode=true;
         //reset odometry
@@ -139,53 +131,68 @@ void loop()
         robot.theta = 0;
       }
 
-      //ES TEST set left motor speed to 100rad/s approx 955rpm (5dpo max speed 300rad/s)
-      //PI individual motor speed control
-      /* if(race_mode){
-        if(robot.x >= 8.85){ //stop condition and deacceleration ramp
-          Vlin = acc_ramp(Vlin, -0.28); 
-        }
+      Serial.print("LDR: ");
+      Serial.print(analogRead(LDRPIN));
 
-        Vlin = acc_ramp(Vlin, 0.035); 
-        double v2 = Vlin;
-        double wref2 = v2/kRobotWhD[1]/2;
-        robot.setMotorWref(1,wref2);
+      Serial.print("   angle: ");
+      Serial.print(robot.angle2line); //radians (display is degrees)
+      Serial.print("| dist: ");
+      Serial.print(robot.dist2line); //not sure what unit (cm?)
 
-        double v1 = Vlin;
-        double wref1 = v1/kRobotWhD[0]/2;
-        robot.setMotorWref(0,wref1); 
+      Serial.print("   x: ");
+      Serial.print(robot.x);
+      Serial.print("| y: ");
+      Serial.print(robot.y);
 
-        //robot.setMotorPWM(0, 200);
-        //robot.setMotorPWM(1, 200);
-      } */
+      Serial.print("   enc_R: ");
+      Serial.print(robot.enc[0].tick);
+      Serial.print("| wR: ");
+      Serial.print(robot.enc[0].odo * kEncImp2MotW);
+      Serial.print("| wRL_ref: ");
+      Serial.print(robot.pid[0].w_ref);
+      Serial.print("| R_Volt: ");
+      Serial.print(robot.pid[0].m);
+
+      Serial.print("   enc_L: ");
+      Serial.print(robot.enc[1].tick);
+      Serial.print("| wL: ");
+      Serial.print(robot.enc[1].odo * kEncImp2MotW);
+      Serial.print("| wL_ref: ");
+      Serial.print(robot.pid[1].w_ref);
+      Serial.print("| L_Volt: ");
+      Serial.print(robot.pid[1].m);
+      Serial.print("\n");
       
       if(race_mode){
         double error_theta = robot.angle2line;
         double error_line = robot.dist2line;
 
-        double tau = 0.3;
-        double Ktheta = 2;
+        //double tau = 0.3;
+        double Ktheta = 1.5;     //2          //0.5 
         //double Ky = Ktheta*Ktheta/(Vlin * 4);
-        double Ky = 60/Vlin;
+        double Ky = 20/Vlin;   //60        //20
 
-        double KdTheta = 275, KdLine = 0; 
-        double TdLine = 11.6; 
+        double KdTheta = 0; //KdLine = 0; //275
+        double TdLine = 0; //11.6 
 
         //w for correction with PD
         double w = Ktheta*error_theta + KdTheta*(error_theta - last_errorTheta) + Ky*(error_line + TdLine*(error_line - last_errorDist));
 
-        if(robot.x >= 8.85){ //stop condition and deacceleration ramp
-          Vlin = acc_ramp(Vlin, -0.28); 
+        //ref robot instantaneous velocity
+        if(robot.x >= 10){ //stop condition and deacceleration ramp
+          Vlin = acc_ramp(Vlin, -0.15); //-0.28
         }
         else{ //accelerate until VlinMax
-          Vlin = acc_ramp(Vlin, 0.035); 
+          Vlin = acc_ramp(Vlin, 0.015); //0.035
         }
 
-        double v1 = Vlin - w*b;
-        double v2 = Vlin + w*b;
+        //ref wheel tangential velocity
+        double v1 = Vlin + w*(kRobotL[0]/2);
+        double v2 = Vlin - w*(kRobotL[0]/2);
 
-        double wref1 = v1/kRobotWhD[0]/2;
-        double wref2 = v2/kRobotWhD[1]/2;
+        //ref motor angular velocity
+        double wref1 = v1 / kWheelNgear / (kRobotWhD[0]/2);
+        double wref2 = v2 / kWheelNgear / (kRobotWhD[1]/2);
 
         last_errorTheta = error_theta;
         last_errorDist = error_line;

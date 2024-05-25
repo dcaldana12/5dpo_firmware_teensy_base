@@ -78,6 +78,7 @@ constexpr uint8_t kRobotSensSwitchPin  = 39;
 
 constexpr float kMotNgear  = 17.f/110.f; //43.8;    //!< gear reduction ratio (n:1) (motor2encoder speed)
 constexpr float kWheelNgear = 17.f/36.f;            //!< gear reduction ratio (motor2wheel speed)
+constexpr float kEnc2WheelNgear = 55.f/18.f;        //!< gear reduction ratio (encoder2wheel speed)
 constexpr float kMotEncRes = 2400;    //!< encoder resolution (tick count per rev.)
 
 constexpr uint8_t kMotEncPin[kNumMot][2] =
