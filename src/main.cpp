@@ -14,6 +14,7 @@
  ******************************************************************************/
 
 bool race_mode=false;
+bool brake=false;
 
 unsigned long current_micros = 0;
 unsigned long first_micros = 0;
@@ -22,9 +23,9 @@ unsigned long last_motor_update_millis = 0;
 //double Wmax = 200; //200
 //double Wmin = 50;  //90 //100
 double VlinMin = 0.4722; //50 * r * 17/32 (m/s)  //Wmin*r
-double VlinMax = 3; //Wmax*r
+double VlinMax = 3.5; //Wmax*r
 double Vlin = VlinMin;
-double Wlimit = 350;//230
+double Wlimit = 450;//230
 int cont = 0;
 double last_errorTheta = 0, last_errorDist = 0;
 
@@ -132,8 +133,8 @@ void loop()
         robot.theta = 0;
       }
 
-      Serial.print("LDR: ");
-      Serial.print(analogRead(LDRPIN));
+      Serial.print("Vlin: ");
+      Serial.print(Vlin);
 
       Serial.print("   angle: ");
       Serial.print(robot.angle2line); //radians (display is degrees)
@@ -171,7 +172,7 @@ void loop()
         //double tau = 0.3;
         double Ktheta = 1.5;     //2          //0.5 
         //double Ky = Ktheta*Ktheta/(Vlin * 4);
-        double Ky = 20/Vlin;   //60        //20
+        double Ky = 60/Vlin;   //60        //20
 
         double KdTheta = 100; //KdLine = 0; //275
         double TdLine = 5; //11.6 
@@ -180,10 +181,11 @@ void loop()
         double w = Ktheta*error_theta + KdTheta*(error_theta - last_errorTheta) + Ky*(error_line + TdLine*(error_line - last_errorDist));
 
         //ref robot instantaneous velocity
-        if(robot.x > 8){ //stop condition and deacceleration ramp
+        if(robot.x > 9 || brake){ //stop condition and deacceleration ramp
           Vlin = acc_ramp(Vlin, -0.15); //-0.28
+          brake=true;
         }
-        else{ //accelerate until VlinMax
+        else { //accelerate until VlinMax
           Vlin = acc_ramp(Vlin, 0.01); //0.035
         }
 
@@ -202,7 +204,7 @@ void loop()
         if(robot.bad_count > 3 || robot.bad_count < -3){
           race_mode = false;
         }
-        else if(abs(error_theta) > 30*M_PI/180 || abs(error_line) > 0.050 || Vlin == 0){
+        else if(abs(error_theta) > 40*M_PI/180 || abs(error_line) > 0.030 || Vlin == 0){
           race_mode = false;
         }
         //limit motors speed
@@ -225,7 +227,6 @@ void loop()
       else{ //stop
         robot.setMotorPWM(1,0);
         robot.setMotorPWM(0,0);
-        Vlin = VlinMin;
       }
 
       // Blink LED

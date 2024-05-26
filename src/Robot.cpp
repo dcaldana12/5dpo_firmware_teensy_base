@@ -177,7 +177,8 @@ void Robot::updateState(uint32_t ticks_left, uint32_t ticks_right)
   double d2 = double(ticks_right)/kMotEncRes*M_PI*kRobotWhD[0] * kEnc2WheelNgear;
   double delta_d = (d2+d1)/2;
   double delta_theta = (d2-d1)/(kRobotL[0]);
-  x = x + delta_d*cos(theta + delta_theta/2);
+  x = x + delta_d;
+  //x = x + delta_d*cos(theta + delta_theta/2);
   y = y + delta_d*sin(theta + delta_theta/2);
   theta = theta + delta_theta;
 }
