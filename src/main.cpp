@@ -21,8 +21,9 @@ unsigned long previous_micros = 0;
 unsigned long last_motor_update_millis = 0;
 //double Wmax = 200; //200
 //double Wmin = 50;  //90 //100
-double Vlin = 0.4722; //50 * r * 17/32 (m/s)  //Wmin*r
-double VlinMax = 1; //Wmax*r
+double VlinMin = 0.4722; //50 * r * 17/32 (m/s)  //Wmin*r
+double VlinMax = 3; //Wmax*r
+double Vlin = VlinMin;
 double Wlimit = 350;//230
 int cont = 0;
 double last_errorTheta = 0, last_errorDist = 0;
@@ -172,18 +173,18 @@ void loop()
         //double Ky = Ktheta*Ktheta/(Vlin * 4);
         double Ky = 20/Vlin;   //60        //20
 
-        double KdTheta = 0; //KdLine = 0; //275
-        double TdLine = 0; //11.6 
+        double KdTheta = 100; //KdLine = 0; //275
+        double TdLine = 5; //11.6 
 
         //w for correction with PD
         double w = Ktheta*error_theta + KdTheta*(error_theta - last_errorTheta) + Ky*(error_line + TdLine*(error_line - last_errorDist));
 
         //ref robot instantaneous velocity
-        if(robot.x >= 10){ //stop condition and deacceleration ramp
+        if(robot.x > 8){ //stop condition and deacceleration ramp
           Vlin = acc_ramp(Vlin, -0.15); //-0.28
         }
         else{ //accelerate until VlinMax
-          Vlin = acc_ramp(Vlin, 0.015); //0.035
+          Vlin = acc_ramp(Vlin, 0.01); //0.035
         }
 
         //ref wheel tangential velocity
@@ -201,7 +202,7 @@ void loop()
         if(robot.bad_count > 3 || robot.bad_count < -3){
           race_mode = false;
         }
-        else if(abs(error_theta) > 45*M_PI/180 || abs(error_line) > 20 || Vlin == 0){
+        else if(abs(error_theta) > 30*M_PI/180 || abs(error_line) > 0.050 || Vlin == 0){
           race_mode = false;
         }
         //limit motors speed
@@ -224,6 +225,7 @@ void loop()
       else{ //stop
         robot.setMotorPWM(1,0);
         robot.setMotorPWM(0,0);
+        Vlin = VlinMin;
       }
 
       // Blink LED
